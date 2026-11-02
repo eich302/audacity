@@ -42,6 +42,10 @@ if (AU_BUILD_USAGEINFO_MODULE)
     add_subdirectory(usageinfo)
 endif()
 
+if (AU_BUILD_VIDEO_MODULE)
+    add_subdirectory(video)
+endif()
+
 if (AU_BUILD_PROJECTSCENE_MODULE)
    add_subdirectory(projectscene)
 endif()
