@@ -97,6 +97,24 @@ const std::vector<CommandInfo> s_commandInfos = {
         Decoration(IconCode::Code::REWIND_END_FILL)
     },
     CommandInfo{
+        PLAYBACK_VIDEO_STEP_FORWARD_COMMAND,
+        //: Command title: shown as a menu item or a button label; keep it short
+        TranslatableString("command", "Next video frame"),
+        //: Command description: shown as a tooltip; can be a full sentence
+        TranslatableString("command_description", "Move the playhead one video frame forward"),
+        InputSchema(),
+        Decoration(IconCode::Code::ARROW_RIGHT)
+    },
+    CommandInfo{
+        PLAYBACK_VIDEO_STEP_BACK_COMMAND,
+        //: Command title: shown as a menu item or a button label; keep it short
+        TranslatableString("command", "Previous video frame"),
+        //: Command description: shown as a tooltip; can be a full sentence
+        TranslatableString("command_description", "Move the playhead one video frame back"),
+        InputSchema(),
+        Decoration(IconCode::Code::ARROW_LEFT)
+    },
+    CommandInfo{
         PLAYBACK_SEEK_COMMAND,
         //: Command title: shown as a menu item or a button label; keep it short
         TranslatableString("command", "Seek"),

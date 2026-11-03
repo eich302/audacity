@@ -16,6 +16,8 @@ inline static const muse::rcommand::Command PLAYBACK_PAUSE_COMMAND("command://pl
 inline static const muse::rcommand::Command PLAYBACK_STOP_COMMAND("command://playback/stop");
 inline static const muse::rcommand::Command PLAYBACK_REWIND_START_COMMAND("command://playback/rewind-start");
 inline static const muse::rcommand::Command PLAYBACK_REWIND_END_COMMAND("command://playback/rewind-end");
+inline static const muse::rcommand::Command PLAYBACK_VIDEO_STEP_FORWARD_COMMAND("command://playback/video-step-forward");
+inline static const muse::rcommand::Command PLAYBACK_VIDEO_STEP_BACK_COMMAND("command://playback/video-step-back");
 inline static const muse::rcommand::Command PLAYBACK_SEEK_COMMAND("command://playback/seek");
 inline static const std::string PLAYBACK_SEEK_TIME_PARAM("seekTime");
 inline static const std::string PLAYBACK_SEEK_TRIGGER_PLAY_PARAM("triggerPlay");

@@ -28,6 +28,7 @@
 #include "record/irecord.h"
 #include "trackedit/internal/itracknavigationcontroller.h"
 #include "trackedit/iselectioncontroller.h"
+#include "video/ivideoservice.h"
 
 namespace au::playback {
 class PlaybackUiActions;
@@ -50,6 +51,7 @@ public:
     muse::ContextInject<trackedit::ISelectionController> selectionController{ this };
     muse::ContextInject<trackedit::ITrackNavigationController> trackNavigationController{ this };
     muse::ContextInject<ITrackPlaybackControl> trackPlaybackControl{ this };
+    muse::ContextInject<video::IVideoService> videoService{ this };
 
 public:
     PlaybackController(const muse::modularity::ContextPtr& ctx)
@@ -143,6 +145,7 @@ private:
     muse::Ret rewindToStartAction();
     muse::Ret rewindToEndAction();
     muse::Ret onSeekAction(const muse::rcommand::Params& params);
+    muse::Ret videoStepAction(int delta);
     void doSeek(const muse::secs_t secs, bool applyIfPlaying);
     muse::Ret onChangePlaybackRegionAction(const muse::rcommand::Params& params);
     void doChangePlaybackRegion(const PlaybackRegion& region);

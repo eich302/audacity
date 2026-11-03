@@ -30,6 +30,7 @@ import Audacity.AppShell
 import Audacity.ProjectScene
 import Audacity.Playback
 import Audacity.TrackEdit
+import Audacity.Video
 
 DockPage {
     id: root
@@ -420,6 +421,34 @@ DockPage {
             PlaybackMeterPanel {
                 navigationSection: playbackMeterPanel.navigationSection
                 navigationOrderStart: playbackMeterPanel.contentNavigationPanelOrderStart
+            }
+        },
+        DockPanel {
+            id: videoPreviewPanel
+
+            objectName: "videoPreviewPanel"
+            title: qsTrc("appshell", "Video")
+
+            navigationSection: root.navigationPanelSec(videoPreviewPanel.location)
+
+            floatable: false
+
+            width: root.verticalPanelDefaultWidth
+            minimumWidth: root.verticalPanelDefaultWidth
+            maximumWidth: root.verticalPanelDefaultWidth
+
+            minimumHeight: 120
+
+            groupName: root.verticalPanelsGroup
+            location: Location.Right
+
+            //! NOTE: only shown when a video is loaded
+            visible: videoPreview.hasVideo
+
+            VideoPreviewPanel {
+                id: videoPreview
+
+                anchors.fill: parent
             }
         },
         DockPanel {

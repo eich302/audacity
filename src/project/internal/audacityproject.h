@@ -13,6 +13,7 @@
 #include "trackedit/itrackeditclipboard.h"
 #include "trackedit/itrackeditproject.h"
 #include "importexport/import/iimporter.h"
+#include "video/ivideoservice.h"
 #include "au3cloud/icloudprojectsprovider.h"
 
 namespace au::au3 {
@@ -56,6 +57,7 @@ class Audacity4Project : public IAudacityProject, public muse::async::Asyncable,
     muse::ContextInject<au::trackedit::ITrackeditClipboard> clipboard { this };
     muse::ContextInject<IThumbnailCreator> thumbnailCreator { this };
     muse::ContextInject<importexport::IImporter> importer { this };
+    muse::ContextInject<video::IVideoService> videoService { this };
 
 public:
     Audacity4Project(const muse::modularity::ContextPtr& ctx)
@@ -111,6 +113,7 @@ private:
 
     muse::Ret doLoad(const muse::io::path_t& path, bool forceMode, const std::string& format);
     muse::Ret doImport(const muse::io::path_t& path, bool forceMode) const;
+    void registerVideoIfAny(const muse::io::path_t& path) const;
     muse::Ret doImportIntoTrack(const muse::io::path_t& path, trackedit::TrackId dstTrackId, muse::secs_t startTime);
 
     muse::Ret saveProject(const muse::io::path_t& path, bool generateBackup = true, bool createThumbnail = true);

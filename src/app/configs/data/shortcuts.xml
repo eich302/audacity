@@ -659,6 +659,14 @@
         <seq>End</seq>
     </SC>
     <SC>
+        <key>action://playback/video-step-back</key>
+        <seq>Ctrl+Alt+Left</seq>
+    </SC>
+    <SC>
+        <key>action://playback/video-step-forward</key>
+        <seq>Ctrl+Alt+Right</seq>
+    </SC>
+    <SC>
         <key>play-position-decrease</key>
         <seq>Left</seq>
     </SC>

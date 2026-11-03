@@ -3,6 +3,9 @@
 */
 #include "playbackcontroller.h"
 
+#include <algorithm>
+#include <cmath>
+
 #include "framework/rcommand/actiontocommand.h"
 
 #include "record/recordcommands.h"
@@ -28,6 +31,8 @@ static const ActionQuery PLAYBACK_STOP_QUERY("action://playback/stop");
 static const ActionQuery PLAYBACK_REWIND_START_QUERY("action://playback/rewind-start");
 static const ActionQuery PLAYBACK_REWIND_END_QUERY("action://playback/rewind-end");
 static const ActionQuery PLAYBACK_SEEK_QUERY("action://playback/seek");
+static const ActionQuery PLAYBACK_VIDEO_STEP_FORWARD_QUERY("action://playback/video-step-forward");
+static const ActionQuery PLAYBACK_VIDEO_STEP_BACK_QUERY("action://playback/video-step-back");
 static const ActionQuery PLAYBACK_CHANGE_PLAY_REGION_QUERY("action://playback/play-region-change");
 static const ActionQuery PLAYBACK_CHANGE_AUDIO_API_QUERY("action://playback/change-api");
 static const ActionQuery PLAYBACK_CHANGE_PLAYBACK_DEVICE_QUERY("action://playback/change-playback-device");
@@ -116,6 +121,8 @@ void PlaybackController::init()
     cd->onRequest(this, PLAYBACK_REWIND_START_COMMAND, [this]() { return rewindToStartAction(); });
     cd->onRequest(this, PLAYBACK_REWIND_END_COMMAND, [this]() { return rewindToEndAction(); });
     cd->onRequest(this, PLAYBACK_SEEK_COMMAND, [this](const Params& params) { return onSeekAction(params); });
+    cd->onRequest(this, PLAYBACK_VIDEO_STEP_FORWARD_COMMAND, [this]() { return videoStepAction(1); });
+    cd->onRequest(this, PLAYBACK_VIDEO_STEP_BACK_COMMAND, [this]() { return videoStepAction(-1); });
     cd->onRequest(this, PLAYBACK_CHANGE_PLAY_REGION_COMMAND, [this](const Params& params) { return onChangePlaybackRegionAction(params); });
     cd->onRequest(this, PLAYBACK_CHANGE_AUDIO_API_COMMAND, [this](const Params& params) { return setAudioApi(params); });
     cd->onRequest(this, PLAYBACK_CHANGE_PLAYBACK_DEVICE_COMMAND, [this](const Params& params) { return setAudioOutputDevice(params); });
@@ -159,6 +166,8 @@ void PlaybackController::init()
         { PLAYBACK_REWIND_START_QUERY.toString(), PLAYBACK_REWIND_START_COMMAND, {} },
         { PLAYBACK_REWIND_END_QUERY.toString(), PLAYBACK_REWIND_END_COMMAND, {} },
         { PLAYBACK_SEEK_QUERY.toString(), PLAYBACK_SEEK_COMMAND, queryParamsConv },
+        { PLAYBACK_VIDEO_STEP_FORWARD_QUERY.toString(), PLAYBACK_VIDEO_STEP_FORWARD_COMMAND, {} },
+        { PLAYBACK_VIDEO_STEP_BACK_QUERY.toString(), PLAYBACK_VIDEO_STEP_BACK_COMMAND, {} },
         { PLAYBACK_CHANGE_PLAY_REGION_QUERY.toString(), PLAYBACK_CHANGE_PLAY_REGION_COMMAND, queryParamsConv },
         { PLAYBACK_CHANGE_AUDIO_API_QUERY.toString(), PLAYBACK_CHANGE_AUDIO_API_COMMAND, queryParamsConv },
         { PLAYBACK_CHANGE_PLAYBACK_DEVICE_QUERY.toString(), PLAYBACK_CHANGE_PLAYBACK_DEVICE_COMMAND, queryParamsConv },
@@ -626,6 +635,35 @@ muse::Ret PlaybackController::onSeekAction(const Params& params)
         player()->play();
     }
 
+    return make_ok();
+}
+
+muse::Ret PlaybackController::videoStepAction(int delta)
+{
+    if (recordController()->isRecording()) {
+        return make_ret(Ret::Code::Busy);
+    }
+
+    if (!videoService() || !videoService()->hasVideo()) {
+        return make_ok();
+    }
+
+    const double fps = videoService()->fps();
+    if (fps <= 0.0) {
+        return make_ok();
+    }
+
+    const double current = playbackPosition().raw();
+    const int64_t currentIndex = static_cast<int64_t>(std::floor(current * fps + 1e-6));
+    const int64_t lastIndex = std::max<int64_t>(videoService()->frameCount() - 1, 0);
+    const int64_t targetIndex = std::clamp<int64_t>(currentIndex + delta, 0, lastIndex);
+
+    if (!isStopped()) {
+        //! NOTE: stepping is a paused operation: stop the stream but keep the playhead where it is
+        stopAndSeekToPlaybackPosition();
+    }
+
+    doSeek(static_cast<double>(targetIndex) / fps, false);
     return make_ok();
 }
 

@@ -25,6 +25,9 @@ static const ActionQuery PLAYBACK_STOP_QUERY("action://playback/stop");
 static const ActionQuery PLAYBACK_REWIND_START_QUERY("action://playback/rewind-start");
 static const ActionQuery PLAYBACK_REWIND_END_QUERY("action://playback/rewind-end");
 
+static const ActionQuery PLAYBACK_VIDEO_STEP_FORWARD_QUERY("action://playback/video-step-forward");
+static const ActionQuery PLAYBACK_VIDEO_STEP_BACK_QUERY("action://playback/video-step-back");
+
 static const ActionQuery PLAYBACK_CHANGE_AUDIO_API_QUERY("action://playback/change-api");
 static const ActionQuery PLAYBACK_CHANGE_PLAYBACK_DEVICE_QUERY("action://playback/change-playback-device");
 static const ActionQuery PLAYBACK_CHANGE_RECORDING_DEVICE_QUERY("action://playback/change-recording-device");
@@ -101,6 +104,24 @@ const UiActionList PlaybackUiActions::m_mainActions = {
              //: Action description: shown as a tooltip; can be a full sentence
              TranslatableString("action_description", "Rewind to end"),
              IconCode::Code::REWIND_END_FILL
+             ),
+    UiAction(PLAYBACK_VIDEO_STEP_FORWARD_QUERY.toString(),
+             au::context::UiCtxProjectOpened,
+             au::context::CTX_PROJECT_FOCUSED,
+             //: Action title: shown as a menu item or a button label; keep it short
+             TranslatableString("action", "Next video frame"),
+             //: Action description: shown as a tooltip; can be a full sentence
+             TranslatableString("action_description", "Move the playhead one video frame forward"),
+             IconCode::Code::ARROW_RIGHT
+             ),
+    UiAction(PLAYBACK_VIDEO_STEP_BACK_QUERY.toString(),
+             au::context::UiCtxProjectOpened,
+             au::context::CTX_PROJECT_FOCUSED,
+             //: Action title: shown as a menu item or a button label; keep it short
+             TranslatableString("action", "Previous video frame"),
+             //: Action description: shown as a tooltip; can be a full sentence
+             TranslatableString("action_description", "Move the playhead one video frame back"),
+             IconCode::Code::ARROW_LEFT
              ),
     UiAction("toggle-loop-region",
              au::context::UiCtxProjectOpened,
