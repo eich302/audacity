@@ -16,6 +16,13 @@ extern "C" {
 
 using namespace au::video;
 
+// AVFrame::pkt_duration is deprecated (FFmpeg 7 / libavutil 59 removes it), AVFrame::duration exists since libavutil 58
+#if LIBAVUTIL_VERSION_MAJOR >= 58
+#define AU_FRAME_DURATION(f) ((f)->duration)
+#else
+#define AU_FRAME_DURATION(f) ((f)->pkt_duration)
+#endif
+
 namespace {
 constexpr int MAX_SIDE = 640;
 constexpr int MAX_FRAMES_AHEAD_NO_SEEK = 8;
@@ -230,7 +237,7 @@ bool FfmpegVideoDecoder::decodeUntil(int64_t targetPts, QImage& out)
         if (pts == AV_NOPTS_VALUE) {
             pts = f->pts;
         }
-        int64_t dur = f->pkt_duration > 0 ? f->pkt_duration : defaultDur;
+        int64_t dur = AU_FRAME_DURATION(f) > 0 ? AU_FRAME_DURATION(f) : defaultDur;
         m_cache = img;
         m_cachePts = pts;
         m_cacheEnd = pts + dur;
@@ -248,7 +255,7 @@ bool FfmpegVideoDecoder::decodeUntil(int64_t targetPts, QImage& out)
             if (pts == AV_NOPTS_VALUE) {
                 pts = m_frame->pts;
             }
-            const int64_t dur = m_frame->pkt_duration > 0 ? m_frame->pkt_duration : defaultDur;
+            const int64_t dur = AU_FRAME_DURATION(m_frame) > 0 ? AU_FRAME_DURATION(m_frame) : defaultDur;
             if (pts == AV_NOPTS_VALUE || pts + dur > targetPts) {
                 const bool ok = accept(m_frame.get());
                 av_frame_unref(m_frame.get());

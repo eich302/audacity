@@ -27,8 +27,75 @@ set(MODULE_SRC
     ${CMAKE_CURRENT_LIST_DIR}/view/videopreviewmodel.h
     )
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(FFMPEG_VIDEO REQUIRED IMPORTED_TARGET libavformat libavcodec libavutil libswscale)
+# FFmpeg: pkg-config first (Linux/macOS), otherwise find_path/find_library (e.g. Windows).
+# On Windows set FFMPEG_ROOT to a prefix containing include/ and lib/ (e.g. a vcpkg or BtbN "shared" build).
+set(FFMPEG_ROOT "" CACHE PATH "FFmpeg install prefix (used when pkg-config is unavailable)")
+
+set(FFMPEG_VIDEO_LINK)
+find_package(PkgConfig QUIET)
+if (PkgConfig_FOUND)
+    pkg_check_modules(FFMPEG_VIDEO QUIET IMPORTED_TARGET libavformat libavcodec libavutil libswscale)
+endif()
+
+if (TARGET PkgConfig::FFMPEG_VIDEO)
+    set(FFMPEG_VIDEO_LINK PkgConfig::FFMPEG_VIDEO)
+else()
+    set(_ffmpeg_hints ${FFMPEG_ROOT} $ENV{FFMPEG_ROOT})
+
+    find_path(FFMPEG_VIDEO_INCLUDE_DIR libavformat/avformat.h
+        HINTS ${_ffmpeg_hints}
+        PATH_SUFFIXES include
+    )
+
+    set(_ffmpeg_libs)
+    foreach(_lib avformat avcodec avutil swscale)
+        find_library(FFMPEG_VIDEO_${_lib}_LIBRARY
+            NAMES ${_lib}
+            HINTS ${_ffmpeg_hints}
+            PATH_SUFFIXES lib lib64
+        )
+        list(APPEND _ffmpeg_libs ${FFMPEG_VIDEO_${_lib}_LIBRARY})
+    endforeach()
+
+    if (NOT FFMPEG_VIDEO_INCLUDE_DIR OR NOT FFMPEG_VIDEO_avformat_LIBRARY OR NOT FFMPEG_VIDEO_avcodec_LIBRARY
+        OR NOT FFMPEG_VIDEO_avutil_LIBRARY OR NOT FFMPEG_VIDEO_swscale_LIBRARY)
+        message(FATAL_ERROR "FFmpeg (libavformat, libavcodec, libavutil, libswscale) not found for the video module. "
+                            "Install the development packages, or set FFMPEG_ROOT, or disable it with -DAU_BUILD_VIDEO_MODULE=OFF")
+    endif()
+
+    set(MODULE_INCLUDE_PRIVATE ${FFMPEG_VIDEO_INCLUDE_DIR})
+    set(FFMPEG_VIDEO_LINK ${_ffmpeg_libs})
+
+    # Windows: ship the FFmpeg runtime DLLs next to the executable (same dir as the app's install(TARGETS ... DESTINATION bin)).
+    if (WIN32)
+        set(_ffmpeg_bin_hints)
+        foreach(_root ${_ffmpeg_hints})
+            list(APPEND _ffmpeg_bin_hints ${_root}/bin)
+        endforeach()
+        get_filename_component(_ffmpeg_inc_prefix "${FFMPEG_VIDEO_INCLUDE_DIR}/.." ABSOLUTE)
+        list(APPEND _ffmpeg_bin_hints ${_ffmpeg_inc_prefix}/bin)
+
+        set(_ffmpeg_dlls)
+        foreach(_dll avformat avcodec avutil swscale swresample)
+            find_file(FFMPEG_VIDEO_${_dll}_DLL
+                NAMES ${_dll}.dll ${_dll}-50.dll ${_dll}-51.dll ${_dll}-52.dll ${_dll}-53.dll ${_dll}-54.dll
+                      ${_dll}-55.dll ${_dll}-56.dll ${_dll}-57.dll ${_dll}-58.dll ${_dll}-59.dll ${_dll}-60.dll
+                      ${_dll}-61.dll ${_dll}-62.dll ${_dll}-63.dll
+                HINTS ${_ffmpeg_bin_hints}
+                NO_DEFAULT_PATH
+            )
+            if (FFMPEG_VIDEO_${_dll}_DLL)
+                list(APPEND _ffmpeg_dlls ${FFMPEG_VIDEO_${_dll}_DLL})
+            else()
+                message(WARNING "FFmpeg runtime DLL for ${_dll} not found in ${_ffmpeg_bin_hints}")
+            endif()
+        endforeach()
+
+        if (_ffmpeg_dlls)
+            install(FILES ${_ffmpeg_dlls} DESTINATION bin)
+        endif()
+    endif()
+endif()
 
 set(MODULE_LINK
     au3wrap
@@ -40,11 +107,13 @@ set(MODULE_LINK
     Qt::Gui
     Qt::Quick
     Qt::Qml
-    PkgConfig::FFMPEG_VIDEO
+    ${FFMPEG_VIDEO_LINK}
     )
+
+set(MODULE_USE_UNITY OFF)
 
 setup_module()
 
-if (AU_BUILD_VIDEO_TESTS)
+if (AU_BUILD_VIDEO_TESTS AND MUSE_ENABLE_UNIT_TESTS)
     add_subdirectory(tests)
 endif()

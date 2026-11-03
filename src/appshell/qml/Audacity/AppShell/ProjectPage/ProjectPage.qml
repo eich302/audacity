@@ -30,7 +30,6 @@ import Audacity.AppShell
 import Audacity.ProjectScene
 import Audacity.Playback
 import Audacity.TrackEdit
-import Audacity.Video
 
 DockPage {
     id: root
@@ -442,13 +441,17 @@ DockPage {
             groupName: root.verticalPanelsGroup
             location: Location.Right
 
-            //! NOTE: only shown when a video is loaded
-            visible: videoPreview.hasVideo
+            //! NOTE: only shown when a video is loaded.
+            //! The video module is optional (AU_BUILD_VIDEO_MODULE), so the panel is loaded by url, not imported:
+            //! if the module is absent the Loader just stays empty and the panel stays hidden.
+            visible: videoPreview.item ? videoPreview.item.hasVideo : false
 
-            VideoPreviewPanel {
+            Loader {
                 id: videoPreview
 
                 anchors.fill: parent
+
+                source: "qrc:/qml/Audacity/Video/VideoPreviewPanel.qml"
             }
         },
         DockPanel {

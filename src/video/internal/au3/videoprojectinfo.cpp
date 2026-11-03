@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <system_error>
 
+#include "au3-project/Project.h"
 #include "au3-project-file-io/ProjectFileIO.h"
 #include "au3-xml/XMLAttributeValueView.h"
 #include "au3-xml/XMLWriter.h"
@@ -14,7 +15,19 @@ using namespace au::video::projectinfo;
 
 namespace fs = std::filesystem;
 
-static const AttachedProjectObjects::RegisteredFactory key
+//! UTF-8 <-> filesystem::path helpers (u8path is deprecated and u8string() returns char8_t in C++20)
+static fs::path toFsPath(const std::string& utf8)
+{
+    return fs::path(std::u8string(reinterpret_cast<const char8_t*>(utf8.data()), utf8.size()));
+}
+
+static std::string fromFsPath(const fs::path& path, bool generic = false)
+{
+    const std::u8string u8 = generic ? path.generic_u8string() : path.u8string();
+    return std::string(reinterpret_cast<const char*>(u8.data()), u8.size());
+}
+
+static const AttachedProjectObjects::RegisteredFactory sKey
 {
     [](AudacityProject&) {
         return std::make_shared<VideoProjectInfo>();
@@ -23,7 +36,7 @@ static const AttachedProjectObjects::RegisteredFactory key
 
 VideoProjectInfo& VideoProjectInfo::Get(AudacityProject& project)
 {
-    return project.AttachedObjects::Get<VideoProjectInfo&>(key);
+    return project.AttachedObjects::Get<VideoProjectInfo>(sKey);
 }
 
 const VideoProjectInfo& VideoProjectInfo::Get(const AudacityProject& project)
@@ -56,15 +69,15 @@ void VideoProjectInfo::setStoredPaths(const std::string& path, const std::string
 std::string VideoProjectInfo::resolvedPath(const std::string& projectFilePath) const
 {
     std::error_code ec;
-    if (!m_path.empty() && fs::exists(fs::u8path(m_path), ec)) {
+    if (!m_path.empty() && fs::exists(toFsPath(m_path), ec)) {
         return m_path;
     }
 
     if (!m_relativePath.empty() && !projectFilePath.empty()) {
-        const fs::path abs = fs::u8path(projectFilePath).parent_path() / fs::u8path(m_relativePath);
+        const fs::path abs = toFsPath(projectFilePath).parent_path() / toFsPath(m_relativePath);
         ec.clear();
         if (fs::exists(abs, ec)) {
-            return abs.lexically_normal().u8string();
+            return fromFsPath(abs.lexically_normal());
         }
     }
 
@@ -82,9 +95,9 @@ static ProjectFileIORegistry::AttributeWriterEntry entry {
         const std::string projectFile = ProjectFileIO::Get(project).GetFileName().utf8_string();
         if (!projectFile.empty()) {
             std::error_code ec;
-            const fs::path r = fs::relative(fs::u8path(info.path()), fs::u8path(projectFile).parent_path(), ec);
+            const fs::path r = fs::relative(toFsPath(info.path()), toFsPath(projectFile).parent_path(), ec);
             if (!ec && !r.empty()) {
-                rel = r.generic_u8string();
+                rel = fromFsPath(r, true);
             }
         }
 
