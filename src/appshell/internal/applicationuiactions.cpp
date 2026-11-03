@@ -128,6 +128,15 @@ const UiActionList ApplicationUiActions::m_actions = {
              TranslatableString("action_description", "Show/hide tracks"),
              Checkable::Yes
              ),
+    UiAction("toggle-video",
+             au::context::UiCtxProjectOpened,
+             au::context::CTX_ANY,
+             //: Action title: shown as a menu item or a button label; keep it short
+             TranslatableString("action", "Show video"),
+             //: Action description: shown as a tooltip; can be a full sentence
+             TranslatableString("action_description", "Show/hide video preview"),
+             Checkable::Yes
+             ),
     // Status bar
     UiAction("toggle-statusbar",
              au::context::UiCtxProjectOpened,
@@ -342,6 +351,7 @@ const QMap<muse::actions::ActionCode, DockName>& ApplicationUiActions::toggleDoc
 
         { "toggle-tracks", TRACKS_PANEL_NAME },
         { "toggle-history", HISTORY_PANEL_NAME },
+        { "toggle-video", VIDEO_PANEL_NAME },
 
         { "toggle-statusbar", PROJECT_STATUSBAR_NAME },
     };

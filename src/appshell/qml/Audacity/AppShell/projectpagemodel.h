@@ -48,6 +48,8 @@ public:
 
     Q_INVOKABLE QString statusBarName() const;
 
+    Q_INVOKABLE void setDockOpen(const QString& name, bool open);
+
 private:
     void toggleDock(const QString& name);
 

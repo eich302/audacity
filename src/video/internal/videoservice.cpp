@@ -4,6 +4,7 @@
 #include "videoservice.h"
 
 #include "framework/global/log.h"
+#include "framework/global/translation.h"
 
 #include "au3-project/Project.h"
 #include "au3-project-history/ProjectHistory.h"
@@ -133,7 +134,16 @@ void VideoService::onCurrentProjectChanged()
         return;
     }
 
-    loadVideo(stored);
+    //! NOTE: resolvedPath() already tried the stored absolute path and the one relative to the project file.
+    //! If neither can be opened, tell the user (non-blocking) and leave the project without video.
+    if (!loadVideo(stored)) {
+        LOGW() << "video of the project is missing or can't be opened: " << stored;
+        if (interactive()) {
+            interactive()->warning(muse::trc("video", "Video file not found"),
+                                   muse::trc("video", "The video file attached to this project could not be opened:")
+                                   + "\n" + stored);
+        }
+    }
 }
 
 void VideoService::setProjectVideoPath(const muse::io::path_t& path)

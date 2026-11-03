@@ -8,6 +8,7 @@
 
 #include "framework/global/async/asyncable.h"
 #include "framework/global/modularity/ioc.h"
+#include "framework/interactive/iinteractive.h"
 
 #include "context/iglobalcontext.h"
 
@@ -18,6 +19,7 @@ namespace au::video {
 class VideoService : public IVideoService, public muse::Contextable, public muse::async::Asyncable
 {
     muse::ContextInject<context::IGlobalContext> globalContext{ this };
+    muse::ContextInject<muse::IInteractive> interactive{ this };
 
 public:
     VideoService(const muse::modularity::ContextPtr& ctx);

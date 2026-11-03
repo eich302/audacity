@@ -102,6 +102,14 @@ QString ProjectPageModel::statusBarName() const
     return PROJECT_STATUSBAR_NAME;
 }
 
+void ProjectPageModel::setDockOpen(const QString& name, bool open)
+{
+    commandDispatcher()->dispatch(dock::DOCK_SET_OPEN_COMMAND, {
+        { "dock_name", Val(name.toStdString()) },
+        { "open", Val(open) },
+    });
+}
+
 void ProjectPageModel::toggleDock(const QString& name)
 {
     commandDispatcher()->dispatch(dock::DOCK_TOGGLE_COMMAND, { { "dock_name", Val(name.toStdString()) } });

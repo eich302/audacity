@@ -8,6 +8,11 @@ clip-editing workflow. Most other Audacity 3 features carry over.
 
 This is the first public beta, expect missing features and bugs.
 
+   * Added video support: a video file can be attached to a project (the path is saved in the project)
+     and is shown in a preview panel at the top right that follows the playhead.
+     Step through the video frame by frame with Ctrl+Alt+Left / Ctrl+Alt+Right.
+     The panel can be shown or hidden from the View menu.
+
 Changes in version 3.7.7
 
 This is a hotfix release. It fixes the following bugs:

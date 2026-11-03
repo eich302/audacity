@@ -261,6 +261,15 @@ const std::vector<CommandInfo> s_commandInfos = {
         Decoration(rcommand::Checkable::Yes)
     },
     CommandInfo{
+        APP_TOGGLE_VIDEO_PANEL_COMMAND,
+        //: Command title: shown as a menu item or a button label; keep it short
+        TranslatableString("command", "Show video"),
+        //: Command description: shown as a tooltip; can be a full sentence
+        TranslatableString("command_description", "Show/hide video preview"),
+        InputSchema(),
+        Decoration(rcommand::Checkable::Yes)
+    },
+    CommandInfo{
         APP_TOGGLE_STATUSBAR_COMMAND,
         //: Command title: shown as a menu item or a button label; keep it short
         TranslatableString("command", "&Status bar"),
