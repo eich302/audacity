@@ -410,6 +410,10 @@
         <seq>Ctrl+Shift+E</seq>
     </SC>
     <SC>
+        <key>video-export</key>
+        <seq>Ctrl+Alt+E</seq>
+    </SC>
+    <SC>
         <key>project-import</key>
         <seq>Ctrl+Shift+I</seq>
     </SC>

@@ -8,8 +8,13 @@
 #include <QQmlEngine>
 
 #include "framework/ui/iuiengine.h"
+#include "framework/rcommand/icommandsregister.h"
+#include "framework/rcommand/icommandsstate.h"
 
 #include "internal/videoservice.h"
+#include "internal/videoexportcontroller.h"
+#include "internal/videocommandsregister.h"
+#include "internal/videocommandsstate.h"
 #include "view/videoframeprovider.h"
 #include "view/videopreviewmodel.h"
 
@@ -37,6 +42,14 @@ void VideoModule::registerUiTypes()
     qmlRegisterType<VideoPreviewModel>("Audacity.Video", 1, 0, "VideoPreviewModel");
 }
 
+void VideoModule::resolveImports()
+{
+    auto cr = globalIoc()->resolve<muse::rcommand::ICommandsRegister>(mname);
+    if (cr) {
+        cr->reg(std::make_shared<VideoCommandsRegister>());
+    }
+}
+
 muse::modularity::IContextSetup* VideoModule::newContext(const muse::modularity::ContextPtr& ctx) const
 {
     return new VideoContext(ctx);
@@ -49,6 +62,14 @@ void VideoContext::registerExports()
     ioc()->registerExport<IVideoService>(mname, m_service);
 }
 
+void VideoContext::resolveImports()
+{
+    auto cs = ioc()->resolve<muse::rcommand::ICommandsState>(mname);
+    if (cs) {
+        cs->reg(std::make_shared<VideoCommandsState>(iocContext()));
+    }
+}
+
 void VideoContext::onInit(const muse::IApplication::RunMode& mode)
 {
     if (mode != muse::IApplication::RunMode::GuiApp) {
@@ -56,6 +77,9 @@ void VideoContext::onInit(const muse::IApplication::RunMode& mode)
     }
 
     m_service->init();
+
+    m_exportController = std::make_shared<VideoExportController>(iocContext());
+    m_exportController->init();
 
     auto uiEngine = ioc()->resolve<muse::ui::IUiEngine>(mname);
     if (uiEngine && uiEngine->qmlEngine()) {
@@ -66,5 +90,8 @@ void VideoContext::onInit(const muse::IApplication::RunMode& mode)
 
 void VideoContext::onDeinit()
 {
+    if (m_exportController) {
+        m_exportController->deinit();
+    }
     m_service->deinit();
 }

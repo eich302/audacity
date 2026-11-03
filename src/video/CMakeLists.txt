@@ -22,6 +22,15 @@ set(MODULE_SRC
     ${CMAKE_CURRENT_LIST_DIR}/internal/au3/videoclipmapping.h
     ${CMAKE_CURRENT_LIST_DIR}/internal/ffmpegvideodecoder.cpp
     ${CMAKE_CURRENT_LIST_DIR}/internal/ffmpegvideodecoder.h
+    ${CMAKE_CURRENT_LIST_DIR}/internal/ffmpegvideoexporter.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/internal/ffmpegvideoexporter.h
+    ${CMAKE_CURRENT_LIST_DIR}/internal/videoexportcontroller.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/internal/videoexportcontroller.h
+    ${CMAKE_CURRENT_LIST_DIR}/internal/videocommandsregister.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/internal/videocommandsregister.h
+    ${CMAKE_CURRENT_LIST_DIR}/internal/videocommandsstate.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/internal/videocommandsstate.h
+    ${CMAKE_CURRENT_LIST_DIR}/videocommands.h
 
     ${CMAKE_CURRENT_LIST_DIR}/view/videoframestore.cpp
     ${CMAKE_CURRENT_LIST_DIR}/view/videoframestore.h
@@ -38,7 +47,7 @@ set(FFMPEG_ROOT "" CACHE PATH "FFmpeg install prefix (used when pkg-config is un
 set(FFMPEG_VIDEO_LINK)
 find_package(PkgConfig QUIET)
 if (PkgConfig_FOUND)
-    pkg_check_modules(FFMPEG_VIDEO QUIET IMPORTED_TARGET libavformat libavcodec libavutil libswscale)
+    pkg_check_modules(FFMPEG_VIDEO QUIET IMPORTED_TARGET libavformat libavcodec libavutil libswscale libswresample)
 endif()
 
 if (TARGET PkgConfig::FFMPEG_VIDEO)
@@ -52,7 +61,7 @@ else()
     )
 
     set(_ffmpeg_libs)
-    foreach(_lib avformat avcodec avutil swscale)
+    foreach(_lib avformat avcodec avutil swscale swresample)
         find_library(FFMPEG_VIDEO_${_lib}_LIBRARY
             NAMES ${_lib}
             HINTS ${_ffmpeg_hints}
@@ -62,8 +71,9 @@ else()
     endforeach()
 
     if (NOT FFMPEG_VIDEO_INCLUDE_DIR OR NOT FFMPEG_VIDEO_avformat_LIBRARY OR NOT FFMPEG_VIDEO_avcodec_LIBRARY
-        OR NOT FFMPEG_VIDEO_avutil_LIBRARY OR NOT FFMPEG_VIDEO_swscale_LIBRARY)
-        message(FATAL_ERROR "FFmpeg (libavformat, libavcodec, libavutil, libswscale) not found for the video module. "
+        OR NOT FFMPEG_VIDEO_avutil_LIBRARY OR NOT FFMPEG_VIDEO_swscale_LIBRARY
+        OR NOT FFMPEG_VIDEO_swresample_LIBRARY)
+        message(FATAL_ERROR "FFmpeg (libavformat, libavcodec, libavutil, libswscale, libswresample) not found for the video module. "
                             "Install the development packages, or set FFMPEG_ROOT, or disable it with -DAU_BUILD_VIDEO_MODULE=OFF")
     endif()
 

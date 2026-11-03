@@ -37,6 +37,7 @@
 #include "projectscene/projectscenecommands.h"
 #include "record/recordcommands.h"
 #include "trackedit/trackeditcommands.h"
+#include "video/videocommands.h"
 
 #include "muse_framework_config.h"
 
@@ -255,6 +256,7 @@ MenuItem* AppMenuModel::makeFileMenu()
         makeSeparator(),
 
         makeMenuItem(PROJECT_EXPORT_AUDIO_COMMAND),
+        makeMenuItem(au::video::VIDEO_EXPORT_COMMAND),
         makeMenuItem(PROJECT_EXPORT_LABELS_COMMAND),
         makeMenuItem(PROJECT_SHARE_AUDIO_COMMAND),
 

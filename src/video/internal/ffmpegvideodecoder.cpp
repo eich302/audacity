@@ -126,7 +126,7 @@ bool FfmpegVideoDecoder::open(const std::string& path)
         m_frameCount = static_cast<int64_t>(std::llround(m_duration * m_fps));
     }
 
-    const double scale = std::min(1.0, static_cast<double>(MAX_SIDE) / std::max(w, h));
+    const double scale = std::min(1.0, static_cast<double>(m_maxSide) / std::max(w, h));
     m_outSize = QSize(std::max(1, static_cast<int>(std::lround(w * scale))),
                       std::max(1, static_cast<int>(std::lround(h * scale))));
 

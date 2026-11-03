@@ -21,6 +21,9 @@ public:
     FfmpegVideoDecoder();
     ~FfmpegVideoDecoder() override;
 
+    // Limits the longer side of the frames returned by frameAt (default 640). Call before open().
+    void setMaxSide(int maxSide) { m_maxSide = maxSide; }
+
     bool open(const std::string& path) override;
     void close() override;
     bool isOpen() const override;
@@ -50,6 +53,7 @@ private:
     std::unique_ptr<AVPacket, PacketDeleter> m_packet;
     std::unique_ptr<SwsContext, SwsDeleter> m_sws;
 
+    int m_maxSide = 640;
     int m_streamIndex = -1;
     double m_fps = 0.0;
     double m_duration = 0.0;
