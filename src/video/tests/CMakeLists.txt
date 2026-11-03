@@ -7,6 +7,7 @@ set(MODULE_TEST video_tests)
 set(MODULE_TEST_SRC
     ${CMAKE_CURRENT_LIST_DIR}/ffmpegvideodecoder_tests.cpp
     ${CMAKE_CURRENT_LIST_DIR}/videoservice_tests.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/videotimemap_tests.cpp
     )
 
 set(MODULE_TEST_INCLUDE
@@ -15,6 +16,7 @@ set(MODULE_TEST_INCLUDE
 
 set(MODULE_TEST_LINK
     video
+    au3wrap
     Qt::Gui
     )
 

@@ -4,6 +4,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 
 #include <QImage>
 
@@ -39,5 +40,19 @@ public:
     // Returns true if the file can be opened and contains a decodable video stream.
     // Does not change the loaded video.
     virtual bool probeHasVideo(const muse::io::path_t& path) const = 0;
+
+    // Call before importing a media file into the current project...
+    virtual void beginImport() = 0;
+    // ...and after a successful import. If the file has video, it becomes the project video
+    // and the audio clips created by the import get an identity video mapping.
+    virtual void finishImport(const muse::io::path_t& path) = 0;
+
+    // Main thread only. Maps a project time to the time in the source video file.
+    // nullopt: there is no video at this position.
+    // Projects without any mapped clip (created before mapping existed) use project time == video time.
+    virtual std::optional<double> sourceTimeAt(double projectTime) const = 0;
+
+    // Emitted when the mapping may have changed (edits, undo/redo, import)
+    virtual muse::async::Notification mappingChanged() const = 0;
 };
 }

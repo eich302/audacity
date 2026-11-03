@@ -16,6 +16,10 @@ set(MODULE_SRC
     ${CMAKE_CURRENT_LIST_DIR}/internal/videoservice.h
     ${CMAKE_CURRENT_LIST_DIR}/internal/au3/videoprojectinfo.cpp
     ${CMAKE_CURRENT_LIST_DIR}/internal/au3/videoprojectinfo.h
+    ${CMAKE_CURRENT_LIST_DIR}/internal/videotimemap.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/internal/videotimemap.h
+    ${CMAKE_CURRENT_LIST_DIR}/internal/au3/videoclipmapping.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/internal/au3/videoclipmapping.h
     ${CMAKE_CURRENT_LIST_DIR}/internal/ffmpegvideodecoder.cpp
     ${CMAKE_CURRENT_LIST_DIR}/internal/ffmpegvideodecoder.h
 
@@ -103,6 +107,8 @@ set(MODULE_LINK
     au3-project
     au3-project-file-io
     au3-project-history
+    au3-track
+    au3-wave-track
     au3-registries
     au3-xml
     Qt::Gui

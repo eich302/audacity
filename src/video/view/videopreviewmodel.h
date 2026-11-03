@@ -68,6 +68,8 @@ private:
     void workerLoop();
     void onFrameDecoded(int64_t requestId, const QImage& frame);
     int frameIndexFor(double secs) const;
+    //! Source frame index for a project time, -1 if there is no video at that position
+    int sourceFrameIndexAt(double projectSecs) const;
 
     bool m_hasVideo = false;
     double m_currentTime = 0.0;
@@ -75,7 +77,8 @@ private:
     double m_fps = 0.0;
     int m_frameCount = 0;
 
-    int m_requestedIndex = -1;
+    int m_requestedIndex = -2; // source frame index, -1: no video at the position, -2: nothing requested yet
+    int m_sourceIndex = -1;
 
     struct Request {
         std::shared_ptr<IVideoService> service;

@@ -113,7 +113,6 @@ private:
 
     muse::Ret doLoad(const muse::io::path_t& path, bool forceMode, const std::string& format);
     muse::Ret doImport(const muse::io::path_t& path, bool forceMode) const;
-    void registerVideoIfAny(const muse::io::path_t& path) const;
     muse::Ret doImportIntoTrack(const muse::io::path_t& path, trackedit::TrackId dstTrackId, muse::secs_t startTime);
 
     muse::Ret saveProject(const muse::io::path_t& path, bool generateBackup = true, bool createThumbnail = true);

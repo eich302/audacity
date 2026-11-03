@@ -201,36 +201,25 @@ Ret Audacity4Project::doImport(const muse::io::path_t& path, const bool forceMod
         return muse::make_ret(muse::Ret::Code::InternalError);
     }
 
-    const bool ok = importer()->import(path);
-    m_trackeditProject->reload();
-
-    if (ok) {
-        registerVideoIfAny(path);
-    }
-
-    return ok ? muse::make_ret(Ret::Code::Ok) : muse::make_ret(Ret::Code::InternalError);
-}
-
-void Audacity4Project::registerVideoIfAny(const muse::io::path_t& path) const
-{
     // The video module is optional (AU_BUILD_VIDEO_MODULE), so the service may be absent.
-    if (!videoService()) {
-        LOGW() << "video service not available";
-        return;
-    }
-
     static const std::set<std::string> videoExts {
         "mp4", "mkv", "avi", "mov", "webm", "m4v", "mpg", "mpeg", "wmv", "flv", "ts"
     };
-
     const std::string ext = muse::strings::toLower(io::suffix(path));
-    if (!videoExts.count(ext)) {
-        return;
+    const bool maybeVideo = videoService() && videoExts.count(ext);
+
+    if (maybeVideo) {
+        videoService()->beginImport();
     }
 
-    if (videoService()->probeHasVideo(path)) {
-        videoService()->setProjectVideoPath(path);
+    const bool ok = importer()->import(path);
+    m_trackeditProject->reload();
+
+    if (ok && maybeVideo) {
+        videoService()->finishImport(path);
     }
+
+    return ok ? muse::make_ret(Ret::Code::Ok) : muse::make_ret(Ret::Code::InternalError);
 }
 
 Ret Audacity4Project::doImportIntoTrack(const muse::io::path_t& path, trackedit::TrackId dstTrackId, muse::secs_t startTime)

@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <optional>
 
 #include "playback/playbackcommands.h"
 
@@ -48,6 +49,11 @@ void VideoPreviewModel::load()
         });
     }
 
+    videoService()->mappingChanged().onNotify(this, [this]() {
+        // Edits, undo/redo: the same project time may now show another frame
+        setTime(m_currentTime);
+    });
+
     onVideoChanged();
     subscribeToPlayback();
 }
@@ -84,8 +90,9 @@ void VideoPreviewModel::onVideoChanged()
     }
 
     // Force a refresh, the video itself may have changed
-    m_requestedIndex = -1;
-    requestFrame(frameIndexFor(m_currentTime));
+    m_requestedIndex = -2;
+    m_sourceIndex = sourceFrameIndexAt(m_currentTime);
+    requestFrame(m_sourceIndex);
 
     emit currentTimeChanged();
     emit timeTextChanged();
@@ -104,13 +111,33 @@ int VideoPreviewModel::frameIndexFor(double secs) const
     return std::max(idx, 0);
 }
 
+int VideoPreviewModel::sourceFrameIndexAt(double projectSecs) const
+{
+    if (!m_hasVideo || !videoService() || m_fps <= 0.0) {
+        return -1;
+    }
+
+    const std::optional<double> src = videoService()->sourceTimeAt(projectSecs);
+    if (!src || *src < 0.0) {
+        return -1;
+    }
+
+    const double dur = videoService()->duration();
+    if (dur > 0.0 && *src >= dur + 1.0 / m_fps) {
+        return -1; // past the end of the video
+    }
+
+    return frameIndexFor(*src);
+}
+
 void VideoPreviewModel::setTime(double secs)
 {
     secs = std::max(0.0, secs);
-    const int idx = frameIndexFor(secs);
+    const int idx = sourceFrameIndexAt(secs);
     const bool changed = idx != m_requestedIndex;
 
     m_currentTime = secs;
+    m_sourceIndex = idx;
 
     if (!changed) {
         return;
@@ -138,8 +165,8 @@ void VideoPreviewModel::requestFrame(int frameIndex)
 {
     m_requestedIndex = frameIndex;
 
-    if (!m_hasVideo || !videoService() || m_fps <= 0.0) {
-        // Nothing to decode: clear the shown frame
+    if (frameIndex < 0 || !m_hasVideo || !videoService() || m_fps <= 0.0) {
+        // Nothing to decode (or no video at this position): clear the shown frame
         VideoFrameStore::instance().setFrame(QImage());
         ++m_frameId;
         emit frameIdChanged();
@@ -213,7 +240,7 @@ double VideoPreviewModel::fps() const
 
 int VideoPreviewModel::frameIndex() const
 {
-    return frameIndexFor(m_currentTime);
+    return m_sourceIndex;
 }
 
 int VideoPreviewModel::frameCount() const
@@ -225,17 +252,18 @@ QString VideoPreviewModel::timeText() const
 {
     const int fpsInt = std::max(1, static_cast<int>(std::lround(m_fps)));
     const int idx = frameIndex();
+    const QString frameText = idx >= 0 ? QString::number(idx) : QString(QChar(0x2013));
 
     const int totalSecs = static_cast<int>(std::floor(m_currentTime));
     const int hh = totalSecs / 3600;
     const int mm = (totalSecs / 60) % 60;
     const int ss = totalSecs % 60;
-    const int ff = idx % fpsInt;
+    const int ff = std::min(fpsInt - 1, static_cast<int>((m_currentTime - totalSecs) * fpsInt));
 
     return QString("%1:%2:%3.%4  (frame %5)")
            .arg(hh, 2, 10, QChar('0'))
            .arg(mm, 2, 10, QChar('0'))
            .arg(ss, 2, 10, QChar('0'))
            .arg(ff, 2, 10, QChar('0'))
-           .arg(idx);
+           .arg(frameText);
 }

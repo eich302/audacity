@@ -61,6 +61,14 @@ void WaveClipListener::Erase(size_t)
 {
 }
 
+void WaveClipListener::OnSequenceDeleted(double, double)
+{
+}
+
+void WaveClipListener::OnSequenceInserted(double, double, const WaveClip*)
+{
+}
+
 WaveClipChannel::~WaveClipChannel() = default;
 
 Envelope& WaveClipChannel::GetEnvelope()
@@ -1317,6 +1325,16 @@ bool WaveClip::Paste(double t0, const WaveClip& o)
         mSequences[ii]->Paste(s0, newClip->mSequences[ii].get());
     }
 
+    {
+        const double seqT = s0.as_double() / mRate;
+        const double seqLength = newClip->GetSequenceSamplesCount().as_double()
+                                 / std::max<size_t>(newClip->NChannels(), 1) / mRate;
+        const WaveClip* source = newClip.get();
+        Attachments::ForEach([&](WaveClipListener& listener){
+            listener.OnSequenceInserted(seqT, seqLength, source);
+        });
+    }
+
     // Assume No-fail-guarantee in the remaining
 
     finisher.Commit();
@@ -1354,6 +1372,14 @@ void WaveClip::InsertSilence(double t, double len, double* pEnvelopeValue)
     // use Strong-guarantee
     for (auto& pSequence : mSequences) {
         pSequence->InsertSilence(s0, slen);
+    }
+
+    {
+        const double seqT = s0.as_double() / mRate;
+        const double seqLength = slen.as_double() / mRate;
+        Attachments::ForEach([&](WaveClipListener& listener){
+            listener.OnSequenceInserted(seqT, seqLength, nullptr);
+        });
     }
 
     // use No-fail-guarantee in the rest
@@ -1455,6 +1481,14 @@ auto WaveClip::ClearSequence(double t0, double t1) -> ClearSequenceFinisher
     // use Strong-guarantee
     for (auto& pSequence : mSequences) {
         pSequence->Delete(s0, s1 - s0);
+    }
+
+    {
+        const double seqT0 = s0.as_double() / mRate;
+        const double seqT1 = s1.as_double() / mRate;
+        Attachments::ForEach([&](WaveClipListener& listener){
+            listener.OnSequenceDeleted(seqT0, seqT1);
+        });
     }
 
     return { this, t0, t1 };

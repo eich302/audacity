@@ -78,6 +78,15 @@ struct WaveClipListener : WaveClipListenerBase {
      Default implementation does nothing
      */
     virtual void Erase(size_t index);
+
+    //! Called after the sequence-time range [seqT0, seqT1) (seconds, unstretched, i.e. samples / rate)
+    //! was removed from the clip's sequence. Default implementation does nothing
+    virtual void OnSequenceDeleted(double seqT0, double seqT1);
+
+    //! Called after `length` seconds (unstretched) were inserted into the clip's sequence at seqT.
+    //! @param source the clip whose whole sequence was pasted, or nullptr for silence
+    //! Default implementation does nothing
+    virtual void OnSequenceInserted(double seqT, double length, const WaveClip* source);
 };
 
 class WAVE_TRACK_API WaveClipChannel : public ChannelInterval, public ClipTimes

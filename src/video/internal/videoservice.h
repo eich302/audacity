@@ -5,12 +5,17 @@
 
 #include <memory>
 #include <mutex>
+#include <set>
 
 #include "framework/global/async/asyncable.h"
 #include "framework/global/modularity/ioc.h"
 #include "framework/interactive/iinteractive.h"
 
 #include "context/iglobalcontext.h"
+
+#include "au3-utility/Observer.h"
+
+class AudacityProject;
 
 #include "../ivideodecoder.h"
 #include "../ivideoservice.h"
@@ -43,12 +48,22 @@ public:
     void setProjectVideoPath(const muse::io::path_t& path) override;
     bool probeHasVideo(const muse::io::path_t& path) const override;
 
+    void beginImport() override;
+    void finishImport(const muse::io::path_t& path) override;
+    std::optional<double> sourceTimeAt(double projectTime) const override;
+    muse::async::Notification mappingChanged() const override;
+
 private:
     void onCurrentProjectChanged();
+
+    void subscribeToProjectHistory(::AudacityProject* project);
 
     mutable std::mutex m_mutex;
     std::unique_ptr<IVideoDecoder> m_decoder;
     muse::io::path_t m_path;
     muse::async::Notification m_videoChanged;
+    muse::async::Notification m_mappingChanged;
+    std::set<int64_t> m_importSnapshot;
+    Observer::Subscription m_undoSubscription;
 };
 }

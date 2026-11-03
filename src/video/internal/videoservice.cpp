@@ -3,12 +3,18 @@
 */
 #include "videoservice.h"
 
+#include <algorithm>
+
 #include "framework/global/log.h"
 #include "framework/global/translation.h"
 
 #include "au3-project/Project.h"
 #include "au3-project-history/ProjectHistory.h"
+#include "au3-project-history/UndoManager.h"
+#include "au3-track/Track.h"
+#include "au3-wave-track/WaveTrack.h"
 
+#include "au3/videoclipmapping.h"
 #include "au3/videoprojectinfo.h"
 #include "ffmpegvideodecoder.h"
 
@@ -125,6 +131,7 @@ void VideoService::onCurrentProjectChanged()
 {
     auto project = globalContext()->currentProject();
     ::AudacityProject* au3 = au3Project(project);
+    subscribeToProjectHistory(au3);
     if (!au3) {
         unloadVideo();
         return;
@@ -168,4 +175,119 @@ bool VideoService::probeHasVideo(const muse::io::path_t& path) const
     const bool hasVideo = decoder.open(path.toStdString()) && decoder.isOpen();
     LOGI() << "probe " << path << ": has video = " << hasVideo;
     return hasVideo;
+}
+
+void VideoService::subscribeToProjectHistory(::AudacityProject* project)
+{
+    m_undoSubscription = {};
+    if (!project) {
+        return;
+    }
+
+    m_undoSubscription = UndoManager::Get(*project).Subscribe([this](const UndoRedoMessage& message) {
+        switch (message.type) {
+        case UndoRedoMessage::Pushed:
+        case UndoRedoMessage::Modified:
+        case UndoRedoMessage::UndoOrRedo:
+        case UndoRedoMessage::Reset:
+            m_mappingChanged.notify();
+            break;
+        default:
+            break;
+        }
+    });
+}
+
+void VideoService::beginImport()
+{
+    m_importSnapshot.clear();
+
+    ::AudacityProject* au3 = au3Project(globalContext()->currentProject());
+    if (!au3) {
+        return;
+    }
+
+    for (const Track* track : TrackList::Get(*au3)) {
+        m_importSnapshot.insert(track->GetId().raw());
+    }
+}
+
+void VideoService::finishImport(const muse::io::path_t& path)
+{
+    if (!probeHasVideo(path)) {
+        return;
+    }
+
+    ::AudacityProject* au3 = au3Project(globalContext()->currentProject());
+    if (!au3) {
+        setProjectVideoPath(path);
+        return;
+    }
+
+    for (WaveTrack* track : TrackList::Get(*au3).Any<WaveTrack>()) {
+        if (m_importSnapshot.count(track->GetId().raw())) {
+            continue;
+        }
+        for (const auto& clip : track->Intervals()) {
+            const int rate = clip->GetRate();
+            const size_t channels = std::max<size_t>(clip->NChannels(), 1);
+            if (rate <= 0) {
+                continue;
+            }
+            const double duration = clip->GetSequenceSamplesCount().as_double() / channels / rate;
+            VideoClipMapping::Get(*clip).map = VideoTimeMap::identity(duration);
+        }
+    }
+
+    m_importSnapshot.clear();
+
+    //! NOTE: must come after the mappings are set: it updates the current undo state (ModifyState),
+    //! so that the mappings are part of the undo snapshot created by the import
+    setProjectVideoPath(path);
+    m_mappingChanged.notify();
+}
+
+std::optional<double> VideoService::sourceTimeAt(double projectTime) const
+{
+    ::AudacityProject* au3 = au3Project(globalContext()->currentProject());
+    if (!au3) {
+        return projectTime;
+    }
+
+    bool anyMapped = false;
+    std::optional<double> result;
+    bool found = false;
+
+    for (WaveTrack* track : TrackList::Get(*au3).Any<WaveTrack>()) {
+        for (const auto& clip : track->Intervals()) {
+            const VideoClipMapping* mapping = VideoClipMapping::Find(*clip);
+            if (!mapping || mapping->map.empty()) {
+                continue;
+            }
+            anyMapped = true;
+            if (found) {
+                continue;
+            }
+            if (projectTime < clip->GetPlayStartTime() || projectTime >= clip->GetPlayEndTime()) {
+                continue;
+            }
+            const double stretch = clip->GetStretchRatio() > 0.0 ? clip->GetStretchRatio() : 1.0;
+            const double seqT = std::max(0.0, (projectTime - clip->GetSequenceStartTime()) / stretch);
+            const auto src = mapping->map.sourceTimeAt(seqT);
+            if (src) {
+                result = src;
+                found = true;
+            }
+        }
+    }
+
+    if (!anyMapped) {
+        return projectTime; // legacy project: video time == project time
+    }
+    return result;
+}
+
+muse::async::Notification VideoService::mappingChanged() const
+{
+    return m_mappingChanged;
 }
