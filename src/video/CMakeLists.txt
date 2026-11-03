@@ -75,17 +75,18 @@ else()
         get_filename_component(_ffmpeg_inc_prefix "${FFMPEG_VIDEO_INCLUDE_DIR}/.." ABSOLUTE)
         list(APPEND _ffmpeg_bin_hints ${_ffmpeg_inc_prefix}/bin)
 
+        # DLL names carry the library's major version (e.g. avcodec-62.dll, swscale-9.dll), so glob for them
         set(_ffmpeg_dlls)
         foreach(_dll avformat avcodec avutil swscale swresample)
-            find_file(FFMPEG_VIDEO_${_dll}_DLL
-                NAMES ${_dll}.dll ${_dll}-50.dll ${_dll}-51.dll ${_dll}-52.dll ${_dll}-53.dll ${_dll}-54.dll
-                      ${_dll}-55.dll ${_dll}-56.dll ${_dll}-57.dll ${_dll}-58.dll ${_dll}-59.dll ${_dll}-60.dll
-                      ${_dll}-61.dll ${_dll}-62.dll ${_dll}-63.dll
-                HINTS ${_ffmpeg_bin_hints}
-                NO_DEFAULT_PATH
-            )
-            if (FFMPEG_VIDEO_${_dll}_DLL)
-                list(APPEND _ffmpeg_dlls ${FFMPEG_VIDEO_${_dll}_DLL})
+            set(_found)
+            foreach(_bin ${_ffmpeg_bin_hints})
+                file(GLOB _found "${_bin}/${_dll}.dll" "${_bin}/${_dll}-[0-9]*.dll")
+                if (_found)
+                    break()
+                endif()
+            endforeach()
+            if (_found)
+                list(APPEND _ffmpeg_dlls ${_found})
             else()
                 message(WARNING "FFmpeg runtime DLL for ${_dll} not found in ${_ffmpeg_bin_hints}")
             endif()

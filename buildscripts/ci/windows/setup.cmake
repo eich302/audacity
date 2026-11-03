@@ -34,18 +34,27 @@ if (NOT FFMPEG_ARCH)
     endif()
 endif()
 
-set(FFMPEG_NAME "ffmpeg-n7.1-latest-${FFMPEG_ARCH}-lgpl-shared-7.1")
-set(FFMPEG_URL "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/${FFMPEG_NAME}.zip")
-set(FFMPEG_ARCHIVE "${TEMP_DIR}/${FFMPEG_NAME}.zip")
+# BtbN rotates the versions under the "latest" tag, so try several names in order.
+set(FFMPEG_CANDIDATES
+    "ffmpeg-n8.1-latest-${FFMPEG_ARCH}-lgpl-shared-8.1"
+    "ffmpeg-n9.0-latest-${FFMPEG_ARCH}-lgpl-shared-9.0"
+    "ffmpeg-master-latest-${FFMPEG_ARCH}-lgpl-shared"
+)
 set(FFMPEG_EXTRACT_DIR "${BUILD_TOOLS}/ffmpeg_extract")
 set(FFMPEG_DIR "${BUILD_TOOLS}/ffmpeg")
 
-message(STATUS "Download FFmpeg: ${FFMPEG_URL}")
-file(DOWNLOAD "${FFMPEG_URL}" "${FFMPEG_ARCHIVE}" STATUS FFMPEG_DL_STATUS SHOW_PROGRESS)
-list(GET FFMPEG_DL_STATUS 0 FFMPEG_DL_CODE)
-
 set(FFMPEG_OK OFF)
-if (FFMPEG_DL_CODE EQUAL 0)
+foreach(FFMPEG_NAME ${FFMPEG_CANDIDATES})
+    set(FFMPEG_URL "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/${FFMPEG_NAME}.zip")
+    set(FFMPEG_ARCHIVE "${TEMP_DIR}/${FFMPEG_NAME}.zip")
+    message(STATUS "Download FFmpeg: ${FFMPEG_URL}")
+    file(DOWNLOAD "${FFMPEG_URL}" "${FFMPEG_ARCHIVE}" STATUS FFMPEG_DL_STATUS)
+    list(GET FFMPEG_DL_STATUS 0 FFMPEG_DL_CODE)
+    if (NOT FFMPEG_DL_CODE EQUAL 0)
+        message(STATUS "Not available: ${FFMPEG_DL_STATUS}")
+        continue()
+    endif()
+
     file(REMOVE_RECURSE "${FFMPEG_EXTRACT_DIR}" "${FFMPEG_DIR}")
     file(MAKE_DIRECTORY "${FFMPEG_EXTRACT_DIR}")
     file(ARCHIVE_EXTRACT INPUT "${FFMPEG_ARCHIVE}" DESTINATION "${FFMPEG_EXTRACT_DIR}")
@@ -53,8 +62,9 @@ if (FFMPEG_DL_CODE EQUAL 0)
     if (EXISTS "${FFMPEG_EXTRACT_DIR}/${FFMPEG_NAME}/include")
         file(RENAME "${FFMPEG_EXTRACT_DIR}/${FFMPEG_NAME}" "${FFMPEG_DIR}")
         set(FFMPEG_OK ON)
+        break()
     endif()
-endif()
+endforeach()
 
 if (FFMPEG_OK)
     file(APPEND ${ENV_FILE} "export FFMPEG_ROOT=${FFMPEG_DIR}\n")
