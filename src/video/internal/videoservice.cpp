@@ -51,6 +51,8 @@ bool VideoService::loadVideo(const muse::io::path_t& path)
     }
     if (!ok && !path.empty()) {
         LOGW() << "failed to open video: " << path;
+    } else if (ok) {
+        LOGI() << "video loaded: " << path;
     }
     m_videoChanged.notify();
     return ok;
@@ -163,5 +165,7 @@ void VideoService::setProjectVideoPath(const muse::io::path_t& path)
 bool VideoService::probeHasVideo(const muse::io::path_t& path) const
 {
     FfmpegVideoDecoder decoder;
-    return decoder.open(path.toStdString()) && decoder.isOpen();
+    const bool hasVideo = decoder.open(path.toStdString()) && decoder.isOpen();
+    LOGI() << "probe " << path << ": has video = " << hasVideo;
+    return hasVideo;
 }

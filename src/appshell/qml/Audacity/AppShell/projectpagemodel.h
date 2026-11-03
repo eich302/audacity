@@ -13,6 +13,7 @@
 
 #include "context/iglobalcontext.h"
 #include "playback/iplaybackuistate.h"
+#include "video/ivideoservice.h"
 #include "appshell/iapplicationactioncontroller.h"
 
 #include <QtQml/qqmlregistration.h>
@@ -31,6 +32,7 @@ class ProjectPageModel : public QObject, public muse::async::Asyncable, public m
     muse::ContextInject<muse::dock::IDockWindowProvider> dockWindowProvider { this };
     muse::ContextInject<muse::ui::IUiState> uiState { this };
     muse::ContextInject<playback::IPlaybackUiState> playbackUiState { this };
+    muse::ContextInject<video::IVideoService> videoService { this };
 
 public:
     explicit ProjectPageModel(QObject* parent = nullptr);
@@ -48,12 +50,12 @@ public:
 
     Q_INVOKABLE QString statusBarName() const;
 
-    Q_INVOKABLE void setDockOpen(const QString& name, bool open);
 
 private:
     void toggleDock(const QString& name);
 
     void updatePlaybackMeterVisibility();
+    void updateVideoPanelVisibility();
 
     bool m_inited = false;
 };

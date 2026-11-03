@@ -215,6 +215,7 @@ void Audacity4Project::registerVideoIfAny(const muse::io::path_t& path) const
 {
     // The video module is optional (AU_BUILD_VIDEO_MODULE), so the service may be absent.
     if (!videoService()) {
+        LOGW() << "video service not available";
         return;
     }
 

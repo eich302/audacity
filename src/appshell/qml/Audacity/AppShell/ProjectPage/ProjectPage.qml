@@ -441,7 +441,7 @@ DockPage {
             groupName: root.verticalPanelsGroup
             location: Location.Right
 
-            //! NOTE: opened automatically when a video is loaded (see Connections below), closed when there is none;
+            //! NOTE: opened automatically by ProjectPageModel when a video is loaded, closed when there is none;
             //! the user can toggle it from the View menu.
             //! The video module is optional (AU_BUILD_VIDEO_MODULE), so the panel is loaded by url, not imported:
             //! if the module is absent the Loader just stays empty and the panel stays hidden.
@@ -453,20 +453,6 @@ DockPage {
                 anchors.fill: parent
 
                 source: "qrc:/qml/Audacity/Video/VideoPreviewPanel.qml"
-
-                function updateDockOpen() {
-                    root.pageModel.setDockOpen(videoPreviewPanel.objectName, videoPreview.item ? videoPreview.item.hasVideo : false)
-                }
-
-                onLoaded: Qt.callLater(updateDockOpen)
-
-                Connections {
-                    target: videoPreview.item
-
-                    function onHasVideoChanged() {
-                        Qt.callLater(videoPreview.updateDockOpen)
-                    }
-                }
             }
         },
         DockPanel {

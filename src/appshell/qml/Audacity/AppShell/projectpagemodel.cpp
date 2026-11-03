@@ -35,10 +35,31 @@ void ProjectPageModel::init()
             updatePlaybackMeterVisibility();
         });
 
+        //! NOTE: the video module is optional, so the service may be absent
+        if (videoService()) {
+            videoService()->videoChanged().onNotify(this, [this]() {
+                updateVideoPanelVisibility();
+            });
+        }
+
         m_inited = true;
     }
 
     updatePlaybackMeterVisibility();
+    updateVideoPanelVisibility();
+}
+
+void ProjectPageModel::updateVideoPanelVisibility()
+{
+    //! NOTE: the panel content is only instantiated when the dock is open,
+    //! so opening/closing it has to be driven from here and not from the panel itself
+    const bool open = videoService() && videoService()->hasVideo();
+    muse::async::Async::call(this, [this, open]() {
+        commandDispatcher()->dispatch(dock::DOCK_SET_OPEN_COMMAND, {
+            { "dock_name", Val(VIDEO_PANEL_NAME.toStdString()) },
+            { "open", Val(open) },
+        });
+    });
 }
 
 void ProjectPageModel::updatePlaybackMeterVisibility()
@@ -100,14 +121,6 @@ QString ProjectPageModel::playbackMeterPanelName() const
 QString ProjectPageModel::statusBarName() const
 {
     return PROJECT_STATUSBAR_NAME;
-}
-
-void ProjectPageModel::setDockOpen(const QString& name, bool open)
-{
-    commandDispatcher()->dispatch(dock::DOCK_SET_OPEN_COMMAND, {
-        { "dock_name", Val(name.toStdString()) },
-        { "open", Val(open) },
-    });
 }
 
 void ProjectPageModel::toggleDock(const QString& name)
