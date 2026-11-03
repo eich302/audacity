@@ -91,6 +91,7 @@ apt_packages_ffmpeg=(
   ffmpeg
   libavcodec-dev
   libavformat-dev
+  libavutil-dev
   libswscale-dev
   )
 
@@ -114,6 +115,7 @@ sudo apt-get install -y --no-install-recommends \
   "${apt_packages_basic[@]}" \
   "${apt_packages_standard[@]}" \
   "${apt_packages_runtime[@]}" \
+  "${apt_packages_ffmpeg[@]}" \
   "${apt_packages_au3[@]}"
 
 ##########################################################################

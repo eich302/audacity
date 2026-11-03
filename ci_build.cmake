@@ -90,6 +90,11 @@ macro(do_build build_type build_dir)
         list(APPEND CONFIGURE_ARGS "-DCMAKE_OSX_ARCHITECTURES=${_osx_architectures}")
     endif()
 
+    # Allow disabling the video module from CI (e.g. no FFmpeg available) with env AU_BUILD_VIDEO_MODULE=OFF
+    if (DEFINED ENV{AU_BUILD_VIDEO_MODULE} AND NOT "$ENV{AU_BUILD_VIDEO_MODULE}" STREQUAL "")
+        list(APPEND CONFIGURE_ARGS -DAU_BUILD_VIDEO_MODULE=$ENV{AU_BUILD_VIDEO_MODULE})
+    endif()
+
     message(STATUS "========= Begin configure =========")
     file(MAKE_DIRECTORY ${build_dir})
 
