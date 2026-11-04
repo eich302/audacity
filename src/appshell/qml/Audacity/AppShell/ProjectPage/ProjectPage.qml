@@ -432,13 +432,22 @@ DockPage {
 
             floatable: false
 
+            //! The size across the edge the panel is docked at; the other direction follows the layout
+            readonly property bool sideDocked: root.pageModel.videoPanelLocation === Location.Left
+                                               || root.pageModel.videoPanelLocation === Location.Right
+            readonly property int sideSmallExtent: root.verticalPanelDefaultWidth
+            readonly property int sideLargeExtent: 2 * root.verticalPanelDefaultWidth
+            readonly property int edgeSmallExtent: 200
+            readonly property int edgeLargeExtent: 400
+            readonly property bool large: sideDocked ? width > (sideSmallExtent + sideLargeExtent) / 2
+                                                     : height > (edgeSmallExtent + edgeLargeExtent) / 2
+
             width: root.verticalPanelDefaultWidth
-            minimumWidth: root.verticalPanelDefaultWidth
-            maximumWidth: root.verticalPanelDefaultWidth
+            minimumWidth: sideDocked ? sideSmallExtent : 0
 
-            minimumHeight: 120
+            minimumHeight: 160
 
-            groupName: root.verticalPanelsGroup
+            //! NOTE: no groupName, as a tab of another panel it couldn't have its own size or position
             location: Location.Right
 
             //! NOTE: opened automatically by ProjectPageModel when a video is loaded, closed when there is none;
@@ -453,6 +462,47 @@ DockPage {
                 anchors.fill: parent
 
                 source: "qrc:/qml/Audacity/Video/VideoPreviewPanel.qml"
+
+                Binding {
+                    target: videoPreview.item
+                    when: videoPreview.status === Loader.Ready
+                    property: "panelLocation"
+                    value: root.pageModel.videoPanelLocation
+                }
+
+                Binding {
+                    target: videoPreview.item
+                    when: videoPreview.status === Loader.Ready
+                    property: "panelLarge"
+                    value: videoPreviewPanel.large
+                }
+
+                Connections {
+                    target: root.pageModel
+
+                    function onVideoPanelSizeResetRequested() {
+                        root.pageModel.resizeVideoPanel(videoPreviewPanel.sideDocked ? videoPreviewPanel.sideSmallExtent : videoPreviewPanel.edgeSmallExtent)
+                    }
+                }
+
+                Connections {
+                    target: videoPreview.item
+                    ignoreUnknownSignals: true
+
+                    function onMoveRequested(location) {
+                        const side = location === Location.Left || location === Location.Right
+                        const extent = videoPreviewPanel.large ? (side ? videoPreviewPanel.sideLargeExtent : videoPreviewPanel.edgeLargeExtent)
+                                                               : (side ? videoPreviewPanel.sideSmallExtent : videoPreviewPanel.edgeSmallExtent)
+                        root.pageModel.moveVideoPanel(location, extent)
+                    }
+
+                    function onSizeToggleRequested() {
+                        const side = videoPreviewPanel.sideDocked
+                        const extent = videoPreviewPanel.large ? (side ? videoPreviewPanel.sideSmallExtent : videoPreviewPanel.edgeSmallExtent)
+                                                               : (side ? videoPreviewPanel.sideLargeExtent : videoPreviewPanel.edgeLargeExtent)
+                        root.pageModel.resizeVideoPanel(extent)
+                    }
+                }
             }
         },
         DockPanel {

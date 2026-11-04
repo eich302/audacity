@@ -7,6 +7,7 @@
 #include "framework/global/modularity/ioc.h"
 #include "framework/global/async/asyncable.h"
 #include "framework/rcommand/icommanddispatcher.h"
+#include "framework/dockwindow/docktypes.h"
 #include "framework/dockwindow/idockwindowprovider.h"
 #include "framework/ui/iuiconfiguration.h"
 #include "framework/ui/iuistate.h"
@@ -24,6 +25,8 @@ class ProjectPageModel : public QObject, public muse::async::Asyncable, public m
     Q_OBJECT
     QML_ELEMENT
 
+    Q_PROPERTY(int videoPanelLocation READ videoPanelLocation NOTIFY videoPanelLocationChanged FINAL)
+
     muse::GlobalInject<muse::ui::IUiConfiguration> uiConfiguration;
 
     muse::ContextInject<muse::rcommand::ICommandDispatcher> commandDispatcher { this };
@@ -39,6 +42,10 @@ public:
 
     Q_INVOKABLE void init();
 
+    int videoPanelLocation() const;
+    Q_INVOKABLE void moveVideoPanel(int location, int extent);
+    Q_INVOKABLE void resizeVideoPanel(int extent);
+
     Q_INVOKABLE QString projectToolBarName() const;
     Q_INVOKABLE QString playbackToolBarName() const;
     Q_INVOKABLE QString undoRedoToolBarName() const;
@@ -50,14 +57,21 @@ public:
 
     Q_INVOKABLE QString statusBarName() const;
 
+signals:
+    void videoPanelLocationChanged();
+    void videoPanelSizeResetRequested();
 
 private:
     void toggleDock(const QString& name);
 
     void updatePlaybackMeterVisibility();
     void updateVideoPanelVisibility();
+    void updateVideoPanelLocation();
+    void setVideoPanelLocation(int location);
 
     bool m_inited = false;
+    int m_videoPanelLocation = muse::dock::Location::Right;
+    bool m_videoPanelSizeResetPending = false;
 };
 }
 

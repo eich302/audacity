@@ -32,6 +32,8 @@ qt_add_qml_module(appshell_qml
         mainwindowtitleprovider.h
         projectpagemodel.cpp
         projectpagemodel.h
+        videopanellayout.cpp
+        videopanellayout.h
         PublishPage/publishtoolbarmodel.cpp
         PublishPage/publishtoolbarmodel.h
         windowdroparea.cpp
@@ -145,7 +147,14 @@ if (NOT OS_IS_MAC)
     target_link_libraries(appshell_qml PRIVATE Qt6::GuiPrivate)
 endif(NOT OS_IS_MAC)
 
-target_link_libraries(appshell_qml PRIVATE Qt::Widgets Qt::Quick)
+target_link_libraries(appshell_qml PRIVATE Qt::Widgets Qt::Quick kddockwidgets)
+
+# videopanellayout.cpp moves the video panel through KDDockWidgets, the only user of its headers here
+get_property(kddockwidgets_src_dir GLOBAL PROPERTY kddockwidgets_SOURCE_DIR)
+set_source_files_properties(videopanellayout.cpp PROPERTIES
+    SKIP_UNITY_BUILD_INCLUSION ON
+    INCLUDE_DIRECTORIES "${kddockwidgets_src_dir};${kddockwidgets_src_dir}/kddockwidgets/src"
+)
 
 fixup_qml_module_dependencies(appshell_qml)
 

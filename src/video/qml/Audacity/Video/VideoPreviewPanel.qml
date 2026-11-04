@@ -5,6 +5,7 @@ import QtQuick
 
 import Muse.Ui
 import Muse.UiComponents
+import Muse.Dock
 
 import Audacity.Video
 
@@ -13,6 +14,13 @@ Item {
 
     property alias currentTime: model.currentTime
     readonly property bool hasVideo: model.hasVideo
+
+    //! Set by the dock panel hosting this, which is also what moves and resizes it
+    property int panelLocation: Location.Right
+    property bool panelLarge: false
+
+    signal moveRequested(int location)
+    signal sizeToggleRequested()
 
     function setTime(secs) {
         model.setTime(secs)
@@ -54,7 +62,7 @@ Item {
         }
     }
 
-    Row {
+    Grid {
         id: controls
 
         anchors.horizontalCenter: parent.horizontalCenter
@@ -65,26 +73,66 @@ Item {
         visible: model.hasVideo
         spacing: 8
 
-        FlatButton {
-            anchors.verticalCenter: parent.verticalCenter
-            icon: IconCode.ARROW_LEFT
-            toolTipTitle: qsTrc("video", "Previous frame")
-            onClicked: model.stepFrame(-1)
+        //! One line when docked at the top or bottom, where height is scarce and width isn't
+        columns: root.width >= frameControls.implicitWidth + layoutControls.implicitWidth + spacing + 8 ? 2 : 1
+        horizontalItemAlignment: Grid.AlignHCenter
+
+        Row {
+            id: frameControls
+
+            spacing: 8
+
+            FlatButton {
+                anchors.verticalCenter: parent.verticalCenter
+                icon: IconCode.ARROW_LEFT
+                toolTipTitle: qsTrc("video", "Previous frame")
+                onClicked: model.stepFrame(-1)
+            }
+
+            StyledTextLabel {
+                id: timeLabel
+
+                anchors.verticalCenter: parent.verticalCenter
+                text: model.timeText
+                horizontalAlignment: Text.AlignHCenter
+            }
+
+            FlatButton {
+                anchors.verticalCenter: parent.verticalCenter
+                icon: IconCode.ARROW_RIGHT
+                toolTipTitle: qsTrc("video", "Next frame")
+                onClicked: model.stepFrame(1)
+            }
         }
 
-        StyledTextLabel {
-            id: timeLabel
+        Row {
+            id: layoutControls
 
-            anchors.verticalCenter: parent.verticalCenter
-            text: model.timeText
-            horizontalAlignment: Text.AlignHCenter
-        }
+            spacing: 4
 
-        FlatButton {
-            anchors.verticalCenter: parent.verticalCenter
-            icon: IconCode.ARROW_RIGHT
-            toolTipTitle: qsTrc("video", "Next frame")
-            onClicked: model.stepFrame(1)
+            Repeater {
+                model: [
+                    { location: Location.Left, icon: IconCode.SMALL_ARROW_LEFT, title: qsTrc("video", "Move preview to the left") },
+                    { location: Location.Right, icon: IconCode.SMALL_ARROW_RIGHT, title: qsTrc("video", "Move preview to the right") },
+                    { location: Location.Top, icon: IconCode.SMALL_ARROW_UP, title: qsTrc("video", "Move preview to the top") },
+                    { location: Location.Bottom, icon: IconCode.SMALL_ARROW_DOWN, title: qsTrc("video", "Move preview to the bottom") }
+                ]
+
+                FlatButton {
+                    required property var modelData
+
+                    icon: modelData.icon
+                    toolTipTitle: modelData.title
+                    accentButton: root.panelLocation === modelData.location
+                    onClicked: root.moveRequested(modelData.location)
+                }
+            }
+
+            FlatButton {
+                icon: root.panelLarge ? IconCode.ZOOM_OUT : IconCode.ZOOM_IN
+                toolTipTitle: root.panelLarge ? qsTrc("video", "Make preview smaller") : qsTrc("video", "Make preview larger")
+                onClicked: root.sizeToggleRequested()
+            }
         }
     }
 }
