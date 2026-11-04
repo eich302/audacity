@@ -12,6 +12,8 @@
 #include "framework/rcommand/icommandsstate.h"
 
 #include "internal/videoservice.h"
+#include "internal/videouiactions.h"
+#include "framework/ui/iuiactionsregister.h"
 #include "internal/videoexportcontroller.h"
 #include "internal/videocommandsregister.h"
 #include "internal/videocommandsstate.h"
@@ -80,6 +82,13 @@ void VideoContext::onInit(const muse::IApplication::RunMode& mode)
 
     m_exportController = std::make_shared<VideoExportController>(iocContext());
     m_exportController->init();
+
+    m_uiActions = std::make_shared<VideoUiActions>(iocContext());
+    m_uiActions->init();
+    auto ar = ioc()->resolve<muse::ui::IUiActionsRegister>(mname);
+    if (ar) {
+        ar->reg(m_uiActions);
+    }
 
     auto uiEngine = ioc()->resolve<muse::ui::IUiEngine>(mname);
     if (uiEngine && uiEngine->qmlEngine()) {

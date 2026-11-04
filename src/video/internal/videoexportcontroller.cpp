@@ -22,6 +22,9 @@
 #include "project/iaudacityproject.h"
 #include "trackedit/itrackeditproject.h"
 
+#include "au3-project/Project.h"
+#include "au3-project-rate/ProjectRate.h"
+
 #include "../videocommands.h"
 
 using namespace au::video;
@@ -88,12 +91,25 @@ muse::Ret VideoExportController::renderAudioMix(const std::string& wavPath)
     // ExportChannelsPref::ExportChannels::STEREO
     options[importexport::IExporter::OptionKey::ExportChannelsType] = muse::Val(2);
 
+    //! NOTE: the export preferences may not contain a sample rate yet (0 = invalid for libsndfile),
+    //! so pass the project rate explicitly like the cloud export does
+    auto project = globalContext()->currentProject();
+    ::AudacityProject* au3 = project ? reinterpret_cast< ::AudacityProject*>(project->au3ProjectPtr()) : nullptr;
+    if (au3) {
+        options[importexport::IExporter::OptionKey::ExportSampleRate]
+            = muse::Val(static_cast<int>(ProjectRate::Get(*au3).GetRate()));
+    }
+
     // The audio must start at project time 0 to stay in sync with the picture
     const bool trim = exportConfiguration()->trimBlankSpace();
     exportConfiguration()->setTrimBlankSpace(false);
     muse::Defer restore([this, trim]() { exportConfiguration()->setTrimBlankSpace(trim); });
 
-    return exporter()->exportData(muse::io::path_t(wavPath), options, nullptr, globalContext()->currentProject());
+    const muse::Ret ret = exporter()->exportData(muse::io::path_t(wavPath), options, nullptr, project);
+    if (!ret) {
+        LOGE() << "audio mix for video export failed: " << ret.toString();
+    }
+    return ret;
 }
 
 muse::Ret VideoExportController::exportVideo()
@@ -109,8 +125,12 @@ muse::Ret VideoExportController::exportVideo()
     }
 
     // 1. Where to save
-    const QString movies = QStandardPaths::writableLocation(QStandardPaths::MoviesLocation);
-    muse::io::path_t defaultPath = muse::io::path_t(movies).appendingComponent(project->displayName() + ".mp4");
+    //! NOTE: default to the folder of the source video; fall back to the user's video folder
+    muse::io::path_t defaultDir = muse::io::dirpath(videoService()->videoPath());
+    if (defaultDir.empty() || !std::filesystem::is_directory(defaultDir.toStdString())) {
+        defaultDir = muse::io::path_t(QStandardPaths::writableLocation(QStandardPaths::MoviesLocation));
+    }
+    muse::io::path_t defaultPath = defaultDir.appendingComponent(project->displayName() + ".mp4");
 
     const std::vector<std::string> filter = {
         muse::trc("video", "MP4 (*.mp4)"),
@@ -136,13 +156,16 @@ muse::Ret VideoExportController::exportVideo()
     VideoCodec codec = VideoCodec::H264;
     if (ext == "mp4" || ext == "mkv" || ext == "mov") {
         const IInteractive::ButtonDatas buttons = {
-            IInteractive::ButtonData(BTN_H264, muse::trc("video", "H.264 (most compatible)"), true),
-            IInteractive::ButtonData(BTN_H265, muse::trc("video", "H.265 / HEVC (smaller files)")),
-            IInteractive::ButtonData(IInteractive::Button::Cancel, muse::trc("global", "Cancel")),
+            interactive()->buttonData(IInteractive::Button::Cancel),
+            IInteractive::ButtonData(BTN_H265, muse::trc("video", "H.265 / HEVC (smaller files)"), false, false,
+                                     IInteractive::ButtonRole::ApplyRole),
+            IInteractive::ButtonData(BTN_H264, muse::trc("video", "H.264 (most compatible)"), /*accent=*/ true, false,
+                                     IInteractive::ButtonRole::ApplyRole),
         };
         const IInteractive::Result res = interactive()->questionSync(muse::trc("video", "Video codec"),
                                                                      IInteractive::Text(muse::trc("video", "Choose the video codec.")),
                                                                      buttons, BTN_H264);
+        LOGI() << "video codec choice: " << res.button();
         if (res.isButton(BTN_H265)) {
             codec = VideoCodec::H265;
         } else if (!res.isButton(BTN_H264)) {
@@ -202,7 +225,7 @@ muse::Ret VideoExportController::exportVideo()
         }, Qt::QueuedConnection);
     };
 
-    std::thread([=]() {
+    std::thread([=, this]() {
         FfmpegVideoExporter videoExporter;
         int lastPercent = -1;
         const bool ok = videoExporter.exportVideo(params, [&](double p) {
@@ -216,7 +239,7 @@ muse::Ret VideoExportController::exportVideo()
 
         const bool canceled = videoExporter.wasCanceled() || job->canceled.load();
         const std::string error = videoExporter.lastError();
-        post([=]() { finishJob(progress, params.outputPath, params.audioWavPath, ok, canceled, error); });
+        post([=, this]() { finishJob(progress, params.outputPath, params.audioWavPath, ok, canceled, error); });
     }).detach();
 
     return muse::make_ok();

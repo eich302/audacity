@@ -10,6 +10,7 @@
 namespace au::video {
 class VideoService;
 class VideoExportController;
+class VideoUiActions;
 
 class VideoModule : public muse::modularity::IModuleSetup
 {
@@ -36,5 +37,6 @@ public:
 private:
     std::shared_ptr<VideoService> m_service;
     std::shared_ptr<VideoExportController> m_exportController;
+    std::shared_ptr<VideoUiActions> m_uiActions;
 };
 }

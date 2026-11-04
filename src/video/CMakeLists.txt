@@ -26,6 +26,8 @@ set(MODULE_SRC
     ${CMAKE_CURRENT_LIST_DIR}/internal/ffmpegvideoexporter.h
     ${CMAKE_CURRENT_LIST_DIR}/internal/videoexportcontroller.cpp
     ${CMAKE_CURRENT_LIST_DIR}/internal/videoexportcontroller.h
+    ${CMAKE_CURRENT_LIST_DIR}/internal/videouiactions.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/internal/videouiactions.h
     ${CMAKE_CURRENT_LIST_DIR}/internal/videocommandsregister.cpp
     ${CMAKE_CURRENT_LIST_DIR}/internal/videocommandsregister.h
     ${CMAKE_CURRENT_LIST_DIR}/internal/videocommandsstate.cpp
@@ -115,6 +117,7 @@ endif()
 set(MODULE_LINK
     au3wrap
     au3-project
+    au3-project-rate
     au3-project-file-io
     au3-project-history
     au3-track
