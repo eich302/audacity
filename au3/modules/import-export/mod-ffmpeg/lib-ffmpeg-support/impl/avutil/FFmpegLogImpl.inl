@@ -55,19 +55,20 @@ private:
       {
       case 0:
          cpt = wxT("Error");
-         wxLogError(message);
+         // never use the ffmpeg message as a format string: it may contain "%" (e.g. x264 statistics)
+         wxLogError(wxT("%s"), message);
          break;
       case 1:
          cpt = wxT("Info");
-         wxLogInfo(message);
+         wxLogInfo(wxT("%s"), message);
          break;
       case 2:
          cpt = wxT("Debug");
-         wxLogInfo(message);
+         wxLogInfo(wxT("%s"), message);
          break;
       default:
          cpt = wxT("Log");
-         wxLogInfo(message);
+         wxLogInfo(wxT("%s"), message);
          break;
       }
 
